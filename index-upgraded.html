@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transitionist | Aesthetic Edition</title>
+  <style>
+    :root {
+      --bg: #1a1a1a;
+      --accent: #ff4500;
+      --text: #f2f2f2;
+      --muted: rgba(242, 242, 242, 0.72);
+      --soft: rgba(255, 255, 255, 0.6);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+      position: relative;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(255, 69, 0, 0.09), transparent 42%),
+        radial-gradient(circle at 78% 68%, rgba(255, 69, 0, 0.08), transparent 45%),
+        linear-gradient(140deg, #171717 0%, #1b1b1b 35%, #161616 70%, #1c1c1c 100%);
+      animation: bgFlow 42s ease-in-out infinite alternate;
+    }
+    @keyframes bgFlow {
+      0% { transform: translate3d(-2%, -1%, 0) scale(1.03); filter: hue-rotate(0deg); }
+      100% { transform: translate3d(2%, 1%, 0) scale(1.06); filter: hue-rotate(-6deg); }
+    }
+    .noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.05;
+      background-image:
+        radial-gradient(circle at 20% 20%, #fff 0.5px, transparent 0.7px),
+        radial-gradient(circle at 80% 70%, #fff 0.6px, transparent 0.8px);
+      background-size: 3px 3px, 4px 4px;
+      mix-blend-mode: soft-light;
+    }
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: rgba(26, 26, 26, 0.62);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255, 69, 0, 0.18);
+    }
+    .top-nav .inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      padding: 0 22px;
+    }
+    .top-nav a {
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.24em;
+      font-size: 12px;
+      text-transform: uppercase;
+      transition: color .2s ease;
+    }
+    .top-nav a:hover { color: var(--accent); }
+
+    .module {
+      min-height: 100vh;
+      padding: 96px 28px 84px;
+      position: relative;
+      overflow: hidden;
+      perspective: 1000px;
+    }
+    .particle-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      width: 100%;
+      height: 100%;
+    }
+    .module::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 72% 36%, rgba(255,69,0,.1), rgba(255,69,0,0) 42%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .mouse-halo {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .28s ease;
+      background: radial-gradient(
+        circle var(--hr, 180px) at var(--mx, 50%) var(--my, 50%),
+        rgba(255, 90, 28, 0.28) 0%,
+        rgba(255, 90, 28, 0.12) 35%,
+        rgba(255, 90, 28, 0.04) 55%,
+        rgba(255, 90, 28, 0) 75%
+      );
+      mix-blend-mode: screen;
+    }
+    #home:hover .mouse-halo {
+      opacity: 1;
+    }
+    .container {
+      width: min(1280px, 100%);
+      margin: 0;
+      position: relative;
+      z-index: 3;
+      opacity: 0;
+      transform: translate3d(0, 48px, -220px) rotateX(6deg) rotateY(-2.5deg) scale(0.97);
+      transform-origin: 50% 70%;
+      transition: transform .95s cubic-bezier(.22,1,.36,1), opacity .95s ease;
+    }
+    .container::before {
+      content: "";
+      position: absolute;
+      inset: -2% -1%;
+      pointer-events: none;
+      z-index: 2;
+      background:
+        radial-gradient(circle at 35% 48%, rgba(255, 255, 255, 0.035), transparent 46%),
+        radial-gradient(circle at 64% 55%, rgba(255, 255, 255, 0.03), transparent 48%);
+      filter: blur(10px);
+      mix-blend-mode: soft-light;
+    }
+    .container > * { position: relative; z-index: 3; }
+    .container > .watermark { z-index: 1; }
+    .container.revealed {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) scale(1);
+    }
+    .module:nth-of-type(odd) .container {
+      margin-left: 0;
+      margin-right: auto;
+    }
+    .module:nth-of-type(even) .container {
+      margin-left: auto;
+      margin-right: 0;
+      transform: translate3d(0, 48px, -220px) rotateX(6deg) rotateY(2.5deg) scale(0.97);
+      transform-origin: 70% 70%;
+    }
+    .watermark {
+      position: absolute;
+      font-size: clamp(64px, 12vw, 180px);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(255, 69, 0, 0.09);
+      font-weight: 500;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .en-title {
+      color: var(--accent);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      font-size: clamp(24px, 3.6vw, 58px);
+      font-weight: 500;
+      min-height: 1.25em;
+    }
+    .cn-sub {
+      margin-top: 18px;
+      font-size: clamp(16px, 1.9vw, 28px);
+      letter-spacing: 0.22em;
+      color: var(--soft);
+      font-weight: 300;
+    }
+
+    /* home */
+    .home-stage {
+      min-height: calc(100vh - 180px);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      transition: transform .08s linear;
+    }
+    .home-title {
+      color: var(--accent);
+      font-size: clamp(38px, 8vw, 112px);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .home-sub {
+      margin-top: 16px;
+      width: min(980px, 92vw);
+      line-height: 1.9;
+      font-size: clamp(14px, 1.25vw, 18px);
+      color: var(--soft);
+      letter-spacing: 0.05em;
+      font-weight: 300;
+    }
+
+    /* about */
+    .about-wrap {
+      min-height: calc(100vh - 160px);
+      display: grid;
+      grid-template-columns: 40% 60%;
+      align-items: center;
+      gap: 2vw;
+    }
+    .about-number {
+      font-size: clamp(180px, 30vw, 420px);
+      color: rgba(255, 255, 255, 0.09);
+      font-weight: 600;
+      line-height: 0.9;
+      user-select: none;
+      pointer-events: none;
+    }
+    .about-copy {
+      width: min(760px, 94%);
+      margin-left: auto;
+      text-align: right;
+      position: relative;
+      --lineScale: 0.08;
+    }
+    .about-copy::before {
+      content: "";
+      position: absolute;
+      left: -34px;
+      top: 0;
+      width: 1px;
+      height: 100%;
+      transform-origin: top;
+      transform: scaleY(var(--lineScale));
+      background: linear-gradient(180deg, rgba(255, 69, 0, 0.95), rgba(255, 69, 0, 0.12));
+      transition: transform .18s linear;
+    }
+    .about-title {
+      letter-spacing: 0.4em;
+      margin-bottom: 10px;
+    }
+    .about-body { margin-top: 18px; }
+    .about-body p {
+      color: var(--soft);
+      opacity: .6;
+      line-height: 2.05;
+      margin-bottom: 18px;
+      font-size: clamp(15px, 1.28vw, 18px);
+      font-weight: 300;
+    }
+    .kw {
+      color: var(--soft);
+      transition: color .2s ease;
+      cursor: default;
+    }
+    .kw:hover { color: var(--accent); opacity: 1; }
+    .about-copy .about-title,
+    .about-copy .cn-sub,
+    .about-copy .about-body p {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    .about-copy.in-view .about-title {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity .55s ease, transform .55s ease;
+    }
+    .about-copy.in-view .cn-sub {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity .55s ease .1s, transform .55s ease .1s;
+    }
+    .about-copy.in-view .about-body p {
+      opacity: .6;
+      transform: translateY(0);
+      transition: opacity .55s ease .2s, transform .55s ease .2s;
+    }
+    .about-copy.in-view .about-body p:nth-child(2) { transition-delay: .4s; }
+    .about-copy.in-view .about-body p:nth-child(3) { transition-delay: .6s; }
+    .about-copy.in-view .about-body p:nth-child(4) { transition-delay: .8s; }
+
+    /* journey */
+    .journey-watermark { top: 16%; left: -2%; }
+    .journey-layout {
+      min-height: calc(100vh - 180px);
+      padding-top: 16vh;
+      position: relative;
+      z-index: 4;
+    }
+    .journey-label { padding-left: 0; width: min(760px, 92%); }
+    .journey-count {
+      position: absolute;
+      left: 50%;
+      top: 52%;
+      transform: translate(-50%, -50%) rotate(-14deg);
+      font-size: clamp(240px, 32vw, 500px);
+      color: rgba(255, 69, 0, 0.03);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      z-index: 2;
+      pointer-events: none;
+      user-select: none;
+    }
+    .city-cloud {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+    }
+    .city-node {
+      position: absolute;
+      border: 0;
+      background: transparent;
+      color: var(--soft);
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform .22s ease, color .22s ease;
+      z-index: 4;
+    }
+    .city-node::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(255, 69, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .city-node:hover::after,
+    .city-node.active::after {
+      animation: ripple .9s ease-out infinite;
+    }
+    .city-node:hover,
+    .city-node.active {
+      transform: scale(1.2);
+      color: var(--accent);
+    }
+    @keyframes ripple {
+      from { opacity: .8; width: 8px; height: 8px; }
+      to { opacity: 0; width: 48px; height: 48px; }
+    }
+    .journey-info {
+      position: absolute;
+      width: min(460px, 84vw);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(10px) saturate(120%);
+      -webkit-backdrop-filter: blur(10px) saturate(120%);
+      padding: 18px 20px;
+      border-radius: 14px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+      transform: translate3d(-50%, -50%, 0) scale(0.92);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s ease, transform .25s ease;
+      z-index: 6;
+    }
+    .journey-info.show {
+      opacity: 1;
+      transform: translate3d(-50%, -50%, 0) scale(1);
+    }
+    .journey-info h3 {
+      color: var(--text);
+      font-size: clamp(30px, 4vw, 54px);
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+    .journey-info p {
+      color: var(--soft);
+      opacity: .6;
+      line-height: 1.9;
+      font-size: 17px;
+      font-weight: 300;
+    }
+
+    /* career */
+    .career-watermark { right: -8%; top: 14%; }
+    .career-head { padding: 14vh 0 8vh 0; width: min(640px, 96%); }
+    .career-film { margin-top: 2vh; }
+    .career-stage {
+      min-height: 150vh;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .stage-watermark {
+      position: absolute;
+      left: -2vw;
+      top: 34%;
+      font-size: clamp(84px, 16vw, 280px);
+      color: rgba(255, 69, 0, 0.08);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 600;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 1;
+      transform: translate3d(0, 0, 0);
+      will-change: transform;
+    }
+    .stage-content {
+      position: relative;
+      z-index: 3;
+      width: min(920px, 92vw);
+      margin-left: 10%;
+    }
+    .career-stage:nth-child(even) .stage-content {
+      margin-left: auto;
+      margin-right: 6%;
+    }
+    .stage-period {
+      color: var(--soft);
+      opacity: .6;
+      font-size: 14px;
+      letter-spacing: .12em;
+      margin-bottom: 10px;
+    }
+    .stage-role {
+      color: #fff;
+      font-size: clamp(20px, 2.2vw, 34px);
+      letter-spacing: .03em;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+    .stage-text {
+      color: var(--soft);
+      opacity: .6;
+      line-height: 1.9;
+      font-size: 17px;
+      font-weight: 300;
+      max-width: 860px;
+    }
+    .duration-track {
+      margin-top: 28px;
+      width: 100vw;
+      max-width: none;
+      height: 2px;
+      background: rgba(255, 69, 0, 0.2);
+      transform: translateX(calc(-10% - 28px));
+      position: relative;
+      overflow: hidden;
+    }
+    .career-stage:nth-child(even) .duration-track {
+      transform: translateX(-6%);
+    }
+    .duration-fill {
+      height: 100%;
+      background: linear-gradient(90deg, rgba(255, 69, 0, 0.45), rgba(255, 69, 0, 0.95));
+      position: relative;
+      overflow: hidden;
+    }
+    .duration-fill::after {
+      content: "";
+      position: absolute;
+      top: -4px;
+      right: -1px;
+      width: 14px;
+      height: 10px;
+      background: radial-gradient(circle, rgba(255, 120, 72, 0.95) 0%, rgba(255, 120, 72, 0) 75%);
+      filter: blur(2px);
+    }
+    .duration-fill::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -24%;
+      width: 24%;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,190,160,0.8), rgba(255,255,255,0));
+      animation: progressFlow 2.2s linear infinite;
+    }
+    @keyframes progressFlow {
+      0% { left: -24%; }
+      100% { left: 112%; }
+    }
+    .haz-photo-grid {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      width: min(920px, 94vw);
+    }
+    .haz-photo-grid img {
+      width: 100%;
+      height: clamp(160px, 20vw, 240px);
+      object-fit: cover;
+      border-radius: 4px;
+      opacity: 0.86;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .haz-photo-grid img:hover {
+      opacity: 1;
+      transform: translateY(-2px);
+    }
+
+    /* philosophy */
+    .philo-watermark { left: 44%; top: 8%; }
+    .philo-head { padding: 16vh 0 7vh 0; width: min(640px, 96%); }
+    .philosophy-grid {
+      position: relative;
+      min-height: 72vh;
+      margin-top: 20px;
+    }
+    .geo-shape {
+      position: absolute;
+      border: 1px solid rgba(255, 69, 0, 0.38);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .geo-triangle {
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-bottom: 24px solid rgba(255, 69, 0, 0.3);
+      border-top: 0;
+      background: transparent;
+    }
+    .geo-ring {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+    }
+    .p-card {
+      position: absolute;
+      width: min(520px, 45vw);
+      clip-path: polygon(4% 4%, 98% 0%, 94% 96%, 1% 100%);
+      padding: 28px 20px 28px 34px;
+      cursor: pointer;
+      transition: transform .26s ease, box-shadow .26s ease, filter .2s ease, opacity .2s ease;
+      background: rgba(255, 69, 0, 0.03);
+    }
+    .p-card:nth-of-type(1) { left: 4%; top: 4%; transform: rotate(-6deg); z-index: 3; }
+    .p-card:nth-of-type(2) { right: 6%; top: 10%; transform: rotate(5deg); z-index: 4; }
+    .p-card:nth-of-type(3) { left: 12%; bottom: 8%; transform: rotate(4deg); z-index: 5; }
+    .p-card:nth-of-type(4) { right: 10%; bottom: 2%; transform: rotate(-5deg); z-index: 2; }
+    .philosophy-grid.dimmed .p-card { filter: brightness(0.58); opacity: 0.82; }
+    .philosophy-grid.dimmed .p-card.active {
+      filter: brightness(1);
+      opacity: 1;
+    }
+    .p-card.active {
+      transform: rotate(0deg) scale(1.04) translateY(-4px);
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 69, 0, 0.35) inset;
+      z-index: 12 !important;
+    }
+    .p-card h4 {
+      color: var(--soft);
+      margin-bottom: 10px;
+      font-size: 28px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+    }
+    .p-card p {
+      color: var(--soft);
+      opacity: .6;
+      line-height: 1.9;
+      font-size: 17px;
+      font-weight: 300;
+    }
+    .p-card.active h4,
+    .p-card:hover h4 {
+      color: var(--accent);
+    }
+
+    /* lighthouse */
+    .light-watermark { right: -12%; top: 13%; }
+    .light-head { padding: 15vh 0 7vh 0; width: min(640px, 96%); }
+
+    .module:nth-of-type(odd) .en-title,
+    .module:nth-of-type(odd) .cn-sub {
+      text-align: left;
+      margin-left: 0;
+      margin-right: auto;
+    }
+    .module:nth-of-type(even) .en-title,
+    .module:nth-of-type(even) .cn-sub {
+      text-align: right;
+      margin-left: auto;
+      margin-right: 0;
+    }
+    .module:nth-of-type(even) .journey-info,
+    .module:nth-of-type(even) .timeline,
+    .module:nth-of-type(even) .philosophy-grid,
+    .module:nth-of-type(even) .book-grid,
+    .module:nth-of-type(even) .subhead {
+      margin-left: auto;
+    }
+    .subhead {
+      color: var(--soft);
+      margin: 18px 0 10px;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      font-size: 14px;
+      font-weight: 400;
+    }
+    .book-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .entry {
+      padding: 6px 2px;
+      line-height: 1.9;
+      font-weight: 300;
+      color: var(--soft);
+      opacity: .6;
+      font-size: 16px;
+    }
+    .entry strong {
+      display: block;
+      color: #fff;
+      margin-bottom: 6px;
+      font-size: 22px;
+      font-weight: 500;
+    }
+    .entry-media {
+      margin-top: 10px;
+    }
+    .entry-media img {
+      width: 100%;
+      max-width: 320px;
+      height: auto;
+      border-radius: 4px;
+      opacity: 0.9;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .entry:hover .entry-media img {
+      opacity: 1;
+      transform: translateY(-2px);
+    }
+    .entry .hl { color: #ffab86; }
+    .entry .hl { color: var(--soft); }
+    .entry:hover .hl { color: var(--accent); }
+    .journey-info.show p,
+    .p-card:hover p,
+    .p-card.active p,
+    .entry:hover,
+    .stage-content:hover .stage-text,
+    .stage-content:hover .stage-period {
+      opacity: 1;
+    }
+
+    @media (max-width: 980px) {
+      .journey-layout, .book-grid, .philosophy-grid { grid-template-columns: 1fr; }
+      .journey-layout { padding-top: 12vh; }
+      .career-head, .light-head, .philo-head { padding-left: 0; }
+      .watermark { font-size: clamp(44px, 16vw, 96px); letter-spacing: 0.12em; }
+      .career-stage { min-height: 120vh; }
+      .stage-content,
+      .career-stage:nth-child(even) .stage-content {
+        margin: 0 auto;
+      }
+      .duration-track,
+      .career-stage:nth-child(even) .duration-track {
+        transform: translateX(-28px);
+      }
+      .container,
+      .module:nth-of-type(even) .container {
+        margin: 0 auto;
+      }
+      .module:nth-of-type(even) .en-title,
+      .module:nth-of-type(even) .cn-sub {
+        text-align: left;
+        margin-right: auto;
+      }
+      .about-wrap {
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+      .about-number {
+        text-align: center;
+        font-size: clamp(120px, 34vw, 220px);
+      }
+      .about-copy {
+        width: 100%;
+        margin: 0 auto;
+        text-align: center;
+      }
+      .about-copy::before {
+        left: 50%;
+        top: -8px;
+        height: 120%;
+        transform: translateX(-50%) scaleY(var(--lineScale));
+      }
+      .philosophy-grid {
+        min-height: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .p-card {
+        position: relative;
+        width: 100%;
+        left: auto !important;
+        right: auto !important;
+        top: auto !important;
+        bottom: auto !important;
+        transform: none !important;
+      }
+      .geo-shape { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <nav class="top-nav">
+    <div class="inner">
+      <a href="#home">Home</a>
+      <a href="#about">简介</a>
+      <a href="#journey">Journey</a>
+      <a href="#career">Career</a>
+      <a href="#philosophy">Philosophy</a>
+      <a href="#lighthouse">Lighthouse</a>
+    </div>
+  </nav>
+
+  <section id="home" class="module">
+    <canvas class="particle-canvas" id="particle-home"></canvas>
+    <div class="mouse-halo" id="homeHalo" aria-hidden="true"></div>
+    <div class="container">
+      <div class="home-stage" id="homeStage">
+        <div>
+          <h1 class="home-title">TRANSITIONIST</h1>
+          <p class="home-sub">从危废行业到跨境贸易，从坐落办公室到四处远行。我致力于在不同的生命边界之间，通过行动探索跨界的无限可能。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="module">
+    <canvas class="particle-canvas" id="particle-about"></canvas>
+    <div class="container about-wrap">
+      <div class="about-number">01</div>
+      <div class="about-copy" id="aboutCopy">
+        <h2 class="en-title about-title">ABOUT ME</h2>
+        <p class="cn-sub">灵魂与秩序的跨界者</p>
+        <div class="about-body">
+          <p>00后环工人，在实验室研究过环境净化设计过污水系统，也在直播间感受过流量起伏与爆单的喜悦。</p>
+          <p>跨越过危废处置的<span class="kw">冷门</span>，也闯过直播与贸易行业的热浪。我不定义自己的<span class="kw">边界</span>，只专注于解决当下的问题。</p>
+          <p>我觉得人生在于尝试，在于行走的这个过程。社会化的人类，应当走出不被社会化定义的道路。</p>
+          <p>康庄大道是众人的向往亦是平庸的樊笼，悬崖狭道是极致的收益但也是一线的一生，野山小径能给灵魂自由也要承担孤独。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="journey" class="module">
+    <canvas class="particle-canvas" id="particle-journey"></canvas>
+    <div class="journey-count">40</div>
+    <div class="city-cloud" id="cityCloud"></div>
+    <article class="journey-info" id="journeyInfo">
+      <h3 id="cityTitle">拉萨</h3>
+      <p id="cityDesc">日光在海拔四千米处折射，经筒转动时，听见灵魂归位的声音。</p>
+    </article>
+    <div class="container">
+      <div class="watermark journey-watermark">02 / JOURNEY</div>
+      <div class="journey-layout">
+        <div class="journey-label">
+          <h2 class="en-title">02 / JOURNEY</h2>
+          <p class="cn-sub">城市印象 · 流光词云</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="career" class="module">
+    <canvas class="particle-canvas" id="particle-career"></canvas>
+    <div class="container">
+      <div class="watermark career-watermark">03 / CAREER</div>
+      <header class="career-head">
+        <h2 class="en-title">03 / CAREER</h2>
+        <p class="cn-sub">职场经历 · 橙色进阶</p>
+      </header>
+      <div class="career-film">
+        <article class="career-stage">
+          <div class="stage-watermark" data-speed="0.14">ECO-SYSTEM</div>
+          <div class="stage-content">
+            <p class="stage-period">[2022 - 2023]</p>
+            <h3 class="stage-role">危废行业业务员 | 环境守护者</h3>
+            <p class="stage-text">#生态闭环 #工厂记忆 #责任感<br>行走在工业生产的末端，我看过最复杂的化学反应，也学到了如何为文明的副产品寻找最体面的归宿。</p>
+            <div class="duration-track"><div class="duration-fill" style="width:45%"></div></div>
+            <div class="haz-photo-grid">
+              <img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_c9560f9c03bb559ff6b5a28780dd4616-31dc41fb-305d-46be-b063-1ecbcbb5ad56.png" alt="危废行业工厂外景">
+              <img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_ff06f594044f0a5fd40984df287a8cf8-88bd7fa0-50cb-479a-938c-83a9628c761a.png" alt="危废行业打包物料">
+              <img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_b69a64a57ee8ef9cf613f632cf26486c-717b68d1-d163-4746-ad5d-2f7e8d0ce90a.png" alt="危废行业储罐区">
+            </div>
+          </div>
+        </article>
+        <article class="career-stage">
+          <div class="stage-watermark" data-speed="0.18">LIVE STREAMING</div>
+          <div class="stage-content">
+            <p class="stage-period">[2023 - 2025]</p>
+            <h3 class="stage-role">视频/直播领域多面手 | 流量捕捉者</h3>
+            <p class="stage-text">#凌晨三点 #节奏大师 #感官溢出<br>从耳饰的闪耀到生鲜的色泽，体验每一种赛道在直播行业的绽放，我学会了在镜头后的每一帧里，解构消费者的欲望与生活的美学。</p>
+            <div class="duration-track"><div class="duration-fill" style="width:78%"></div></div>
+            <div class="haz-photo-grid">
+              <img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_67c863b7a598a5b8ee2b0905828c1a49-6edaa1fc-9c18-4e23-9dde-cb04f3bd4734.png" alt="直播数据看板截图一">
+              <img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_e5109979da6178bf6b3043c854cf0e57-60d8e95a-7910-4e63-82e1-2db93ad0d7de.png" alt="直播数据看板截图二">
+              <img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_d28a55299e4fa7d8691e8834c7bc0963-e2290352-1952-4ac5-9666-9de775a77b8e.png" alt="直播活动现场图">
+            </div>
+          </div>
+        </article>
+        <article class="career-stage">
+          <div class="stage-watermark" data-speed="0.15">GLOBAL TRADE</div>
+          <div class="stage-content">
+            <p class="stage-period">[2025 - 2026]</p>
+            <h3 class="stage-role">工贸公司业务员 | 全球连接点</h3>
+            <p class="stage-text">#国际视野 #展会征途 #跨国沟通<br>每一次装柜、每一封邮件、每一次展会，都是在用沟通消弭地理的边界，感知世界贸易最真实的脉搏。</p>
+            <div class="duration-track"><div class="duration-fill" style="width:46%"></div></div>
+            <div class="haz-photo-grid">
+              <img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_e0fcd1fdfb2a36d0cbd3ec68e5ca5082-9f97e189-bb1f-4a2e-b997-6a54415e25b9.png" alt="工贸公司展会现场">
+              <img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_af3f99a80afb1fd75c9449f428e19581-095242cd-469d-467e-ac08-9f6d8b3a4349.png" alt="工贸公司产品展示">
+              <img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_c98f59a22f9ec180a71a7c96de869204-95a7851f-01d7-4be2-8aee-7b5cd4511409.png" alt="工贸公司装柜发货">
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="philosophy" class="module">
+    <canvas class="particle-canvas" id="particle-philosophy"></canvas>
+    <div class="container">
+      <div class="watermark philo-watermark">04 / PHILOSOPHY</div>
+      <header class="philo-head">
+        <h2 class="en-title">04 / PHILOSOPHY</h2>
+        <p class="cn-sub">人生观点 · 哲理感金句</p>
+      </header>
+      <div class="philosophy-grid">
+        <span class="geo-shape geo-ring" style="left: 48%; top: 22%;"></span>
+        <span class="geo-shape geo-triangle" style="left: 42%; top: 54%;"></span>
+        <span class="geo-shape geo-ring" style="right: 38%; bottom: 24%; width:22px; height:22px;"></span>
+        <span class="geo-shape geo-triangle" style="right: 24%; top: 32%; transform: rotate(18deg);"></span>
+        <article class="p-card active"><h4>关于边界</h4><p>所谓跨界，不是离开，而是将原本孤立的岛屿连接成大陆。</p></article>
+        <article class="p-card"><h4>关于行动</h4><p>去过的地方会变成骨骼，经历过的职场会变成肌肉，最后长成我自己的样子。</p></article>
+        <article class="p-card"><h4>关于极简</h4><p>生活越复杂，越要保持思维的纯净。在嘈杂的直播间里，寻找最静谧的定力。</p></article>
+        <article class="p-card"><h4>关于平衡</h4><p>业务是向外的拓荒，旅行是向内的溯源。</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="lighthouse" class="module">
+    <canvas class="particle-canvas" id="particle-lighthouse"></canvas>
+    <div class="container">
+      <div class="watermark light-watermark">05 / LIGHTHOUSE</div>
+      <header class="light-head">
+        <h2 class="en-title">05 / LIGHTHOUSE</h2>
+        <p class="cn-sub">精神灯塔 · 书架清单</p>
+      </header>
+      <h3 class="subhead">BOOKS</h3>
+      <div class="book-grid">
+        <article class="entry"><strong>《瓦尔登湖》</strong>找回内心的秩序。<div class="hl">高光语句：时间决定你会在生命中遇见谁，你的心决定你想要谁出现在你的生命里，而你的行为决定最后谁留下来。</div><div class="entry-media"><img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_2b1dda389e8fe810fd432e43d15f1abc-c163a025-2a00-4c6e-a786-d270a8fb4e74.png" alt="瓦尔登湖意象照片"></div></article>
+        <article class="entry"><strong>《穷查理宝典》</strong>构建多元思维模型。<div class="hl">高光语句：如果你想要得到某样东西，最可靠的方法是让自己配得上它。</div><div class="entry-media"><img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_9b64a8921f118b07716b7b99ef95cb6f-0d70e3e0-99ea-48d6-9366-55bd013d44de.png" alt="穷查理宝典书页照片"></div></article>
+      </div>
+      <h3 class="subhead">FILMS</h3>
+      <div class="book-grid">
+        <article class="entry"><strong>《白日梦想家》</strong>献给所有在路上的人。<div class="hl">高光语句：To see the world, things dangerous to come to, to see behind walls...</div><div class="entry-media"><img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_c93db16f208162a00bad950b99d98c91-c2d93521-a0b4-4e51-a6a5-838de44ad4f4.png" alt="白日梦想家电影画面"></div></article>
+        <article class="entry"><strong>《点球成金》</strong>关于逻辑与逆袭的思考。<div class="hl">高光语句：适应或淘汰，不是口号，而是现实规则。</div><div class="entry-media"><img src="C:/Users/JD/.cursor/projects/d-cursoranli/assets/c__Users_JD_AppData_Roaming_Cursor_User_workspaceStorage_c48609adce68f36a7fe4473df05fb5ed_images_c65ecded556d50372a6ab5c1abb56d5f-8ec421ac-0c8b-49f5-8226-f276082e9625.png" alt="点球成金电影画面"></div></article>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const homeStage = document.getElementById("homeStage");
+    let tx = 0, ty = 0, cx = 0, cy = 0;
+    window.addEventListener("mousemove", (e) => {
+      tx = (e.clientX / innerWidth) * 2 - 1;
+      ty = (e.clientY / innerHeight) * 2 - 1;
+    });
+    (function tiltLoop() {
+      cx += (tx - cx) * 0.08;
+      cy += (ty - cy) * 0.08;
+      homeStage.style.transform = "translate3d(" + (cx * 12) + "px," + (cy * 12) + "px,0) rotateX(" + (-cy * 8) + "deg) rotateY(" + (cx * 8) + "deg)";
+      requestAnimationFrame(tiltLoop);
+    })();
+    const homeSection = document.getElementById("home");
+    const homeHalo = document.getElementById("homeHalo");
+    const aboutSection = document.getElementById("about");
+    const aboutCopy = document.getElementById("aboutCopy");
+    let haloTargetX = 50;
+    let haloTargetY = 50;
+    let haloX = 50;
+    let haloY = 50;
+    let haloRadius = 180;
+    let lastMoveAt = Date.now();
+    homeSection.addEventListener("mousemove", (e) => {
+      const rect = homeSection.getBoundingClientRect();
+      haloTargetX = ((e.clientX - rect.left) / rect.width) * 100;
+      haloTargetY = ((e.clientY - rect.top) / rect.height) * 100;
+      haloRadius = 210;
+      lastMoveAt = Date.now();
+    });
+    const interactiveSelector = "a, button, .p-card, .city-node, .entry";
+    document.addEventListener("mouseover", (e) => {
+      if (e.target.closest(interactiveSelector)) {
+        homeHalo.style.filter = "hue-rotate(-18deg) saturate(135%)";
+      }
+    });
+    document.addEventListener("mouseout", (e) => {
+      if (e.target.closest(interactiveSelector)) {
+        homeHalo.style.filter = "none";
+      }
+    });
+    (function haloLoop() {
+      haloX += (haloTargetX - haloX) * 0.12;
+      haloY += (haloTargetY - haloY) * 0.12;
+      const idleFor = Date.now() - lastMoveAt;
+      const targetRadius = idleFor > 140 ? 160 : 210;
+      haloRadius += (targetRadius - haloRadius) * 0.14;
+      homeHalo.style.setProperty("--mx", haloX + "%");
+      homeHalo.style.setProperty("--my", haloY + "%");
+      homeHalo.style.setProperty("--hr", haloRadius + "px");
+      requestAnimationFrame(haloLoop);
+    })();
+
+    function updateAboutLine() {
+      if (!aboutSection || !aboutCopy) return;
+      const rect = aboutSection.getBoundingClientRect();
+      const visible = Math.max(0, Math.min(window.innerHeight, window.innerHeight - rect.top));
+      const progress = Math.max(0.08, Math.min(1, visible / (window.innerHeight * 0.9)));
+      aboutCopy.style.setProperty("--lineScale", progress.toFixed(3));
+    }
+    window.addEventListener("scroll", updateAboutLine, { passive: true });
+    updateAboutLine();
+
+    const cityData = [
+      { city: "拉萨", desc: "日光在海拔四千米处折射，经筒转动时，听见灵魂归位的声音。" },
+      { city: "唐古拉山", desc: "生命在冻土之上仰望，云层触手可及，荒凉是最高级的纯净。" },
+      { city: "敦煌", desc: "大漠风沙漫过千年，壁画上的飞天，在寂静中注视着过往的旅人。" },
+      { city: "格尔木", desc: "昆仑山下的荒原驿站，盐湖的倒影里，藏着地球最原始的蓝。" },
+      { city: "酒泉", desc: "戈壁深处的航天梦，与古老的边关月，共同守护着星辰大海。" },
+      { city: "青海湖", desc: "那一抹无法定义的蓝，是高原上掉落的镜子，映照着飞鸟与自由。" },
+      { city: "门源", desc: "百里油菜花海是写在大地上的金色诗篇，在雪山怀抱中肆意生长。" },
+      { city: "西宁", desc: "多元文明在河湟谷地汇流，每一碗烟火气里，都有丝路的余温。" },
+      { city: "香格里拉", desc: "离云最近的地方，时间失去了刻度，只有呼吸与雪峰同频。" },
+      { city: "大理", desc: "云朵在苍山上停靠太久，久到让时间都忘记了流动的节奏。" },
+      { city: "丽江", desc: "古城的石板路被岁月磨亮，纳西的驼铃声，依旧在小巷深处回响。" },
+      { city: "西双版纳", desc: "雨林的深处是万物生长的野性，象群走过，留下湿润的绿意。" },
+      { city: "昆明", desc: "四季在此停驻，花海从不凋零，生活是一场永恒的春日漫步。" },
+      { city: "成都", desc: "慢下来的不仅是脚步，还有杯中的茶。在安逸中，解构生活的真谛。" },
+      { city: "重庆", desc: "赛博朋克的魔幻与烟火气交织，轻轨穿楼而过，像一场永不落幕的梦。" },
+      { city: "安康", desc: "秦岭南麓的秦巴明珠，汉江水温润了岁月，山影里藏着故乡的静谧。" },
+      { city: "西安", desc: "城墙下的古都余韵，每一个地名背后，都压着一段沉甸甸的历史。" },
+      { city: "张家界", desc: "奇峰如笔，在大地间勾勒出潘多拉的幻境，云雾缭绕处皆是仙踪。" },
+      { city: "长沙", desc: "火辣的热情在深夜的街头释放，湘江水映着满城的灯火与朝气。" },
+      { city: "武汉", desc: "大江大湖的豪迈气魄，在热干面的香气与黄鹤楼的远眺中并存。" },
+      { city: "南宁", desc: "半城绿树半城楼，东南亚的风吹过街道，带来水果的清甜气息。" },
+      { city: "涠洲岛", desc: "火山岩刻画着时光的褶皱，海浪拍打礁石，记录着亿万年的孤独。" },
+      { city: "广州", desc: "在老西关的早茶与珠江的灯影间，感知极致务实与繁华的融合。" },
+      { city: "香港", desc: "霓虹森林与维港海风，快节奏的脉搏里，跳动着永恒的港味记忆。" },
+      { city: "河源", desc: "万绿湖的水是纯净的底色，在这片客家古地，寻找久违的安宁。" },
+      { city: "黄石", desc: "工业文明的遗迹与磁湖的波光，见证着老城向新生的力量转变。" },
+      { city: "北京", desc: "红墙下的厚重与CBD的凌厉，在胡同的喧嚣里，折射出大国的缩影。" },
+      { city: "哈尔滨", desc: "极寒是冰雪的洗礼，松花江上的风，吹散了岁月的尘埃。" },
+      { city: "牡丹江", desc: "镜泊湖的瀑布飞流而下，在北方的边境，听雪落下的声音。" },
+      { city: "合肥", desc: "低调的科创高地，在包河的垂柳间，酝酿着改变未来的能量。" },
+      { city: "南京", desc: "六朝金粉的哀婉与秦淮河的繁华，在梧桐树荫下，化作一地斜阳。" },
+      { city: "上海", desc: "钢筋水泥的森林里，霓虹是唯一的植被，我们在秩序中捕捉自由。" },
+      { city: "温州", desc: "商脉在血液中奔涌，敢为人先的孤勇，让这座城市永不停息。" },
+      { city: "宁波", desc: "书藏古今，港通天下。在天一阁的书香里，触摸港口城市的灵魂。" },
+      { city: "黄山", desc: "云海是流动的山峦，奇松是风中的定力，行走其间如在画中游。" },
+      { city: "福州", desc: "三坊七巷的慢时光，古榕树的浓荫下，藏着一份闽都的从容。" },
+      { city: "平潭", desc: "凌晨三点追逐那一抹蓝眼泪，海风是有形状的，它雕刻着自由。" },
+      { city: "厦门", desc: "环岛路的骑行与鼓浪屿的琴声，这是大海送给亚热带最温柔的信。" },
+      { city: "上饶", desc: "篁岭的晒秋是丰收的调色盘，在徽派建筑的马头墙下，感知田园。" },
+      { city: "杭州", desc: "西湖的山水是骨子里的浪漫，数字时代的洪流，在江南烟雨中徐徐展开。" }
+    ];
+    const cloud = document.getElementById("cityCloud");
+    const cityTitle = document.getElementById("cityTitle");
+    const cityDesc = document.getElementById("cityDesc");
+    const journeyInfo = document.getElementById("journeyInfo");
+    const journeySection = document.getElementById("journey");
+    const nodes = [];
+    let audioCtx;
+    cityData.forEach((item, i) => {
+      const btn = document.createElement("button");
+      btn.className = "city-node";
+      btn.textContent = item.city;
+      btn.style.left = (4 + Math.random() * 90) + "%";
+      btn.style.top = (6 + Math.random() * 86) + "%";
+      btn.dataset.vx = (Math.random() - .5) * .22;
+      btn.dataset.vy = (Math.random() - .5) * .22;
+      btn.addEventListener("mouseenter", (event) => {
+        nodes.forEach(n => n.classList.remove("active"));
+        btn.classList.add("active");
+        cityTitle.textContent = item.city;
+        cityDesc.textContent = item.desc;
+        const rect = journeySection.getBoundingClientRect();
+        let left = event.clientX - rect.left + 22;
+        let top = event.clientY - rect.top - 18;
+        const maxLeft = rect.width - Math.min(460, rect.width * 0.84) / 2 - 12;
+        const minLeft = Math.min(460, rect.width * 0.84) / 2 + 12;
+        if (left > maxLeft) left = maxLeft;
+        if (left < minLeft) left = minLeft;
+        if (top < 110) top = 110;
+        if (top > rect.height - 110) top = rect.height - 110;
+        journeyInfo.style.left = left + "px";
+        journeyInfo.style.top = top + "px";
+        journeyInfo.classList.add("show");
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.value = 1020;
+        gain.gain.value = .03;
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + .07);
+      });
+      btn.addEventListener("mouseleave", () => {
+        btn.classList.remove("active");
+        journeyInfo.classList.remove("show");
+      });
+      cloud.appendChild(btn);
+      nodes.push(btn);
+      if (i === 0) btn.classList.add("active");
+    });
+    (function driftLoop() {
+      const w = cloud.clientWidth;
+      const h = cloud.clientHeight;
+      nodes.forEach((n) => {
+        let x = parseFloat(n.style.left) / 100 * w;
+        let y = parseFloat(n.style.top) / 100 * h;
+        let vx = parseFloat(n.dataset.vx);
+        let vy = parseFloat(n.dataset.vy);
+        x += vx; y += vy;
+        if (x < 12 || x > w - 70) vx *= -1;
+        if (y < 12 || y > h - 24) vy *= -1;
+        n.dataset.vx = vx; n.dataset.vy = vy;
+        n.style.left = (x / w * 100) + "%";
+        n.style.top = (y / h * 100) + "%";
+      });
+      requestAnimationFrame(driftLoop);
+    })();
+
+    document.querySelectorAll(".p-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        document.querySelectorAll(".p-card").forEach((c) => c.classList.remove("active"));
+        card.classList.add("active");
+      });
+      card.addEventListener("mouseenter", () => {
+        card.parentElement.classList.add("dimmed");
+        document.querySelectorAll(".p-card").forEach((c) => c.classList.remove("active"));
+        card.classList.add("active");
+      });
+      card.addEventListener("mouseleave", () => {
+        card.parentElement.classList.remove("dimmed");
+      });
+    });
+
+    function lineDistance(px, py, ax, ay, bx, by) {
+      const abx = bx - ax;
+      const aby = by - ay;
+      const t = Math.max(0, Math.min(1, ((px - ax) * abx + (py - ay) * aby) / (abx * abx + aby * aby)));
+      const qx = ax + abx * t;
+      const qy = ay + aby * t;
+      return Math.hypot(px - qx, py - qy);
+    }
+    function initShapeParticles(canvasId, shapeBuilder, color) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext("2d");
+      const pointer = { x: 0, y: 0, active: false };
+      let dots = [];
+      function rebuild() {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        dots = shapeBuilder(canvas.width, canvas.height).map((p, i) => ({
+          homeX: p.x, homeY: p.y, x: p.x, y: p.y, vx: 0, vy: 0, r: 1 + Math.random() * 1.1, phase: i * 0.08
+        }));
+      }
+      canvas.parentElement.addEventListener("mousemove", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        pointer.x = e.clientX - rect.left;
+        pointer.y = e.clientY - rect.top;
+        pointer.active = true;
+      });
+      canvas.parentElement.addEventListener("mouseleave", () => { pointer.active = false; });
+      window.addEventListener("resize", rebuild);
+      rebuild();
+      function tick(time) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = color;
+        for (const d of dots) {
+          const tx2 = d.homeX + Math.sin(time * 0.001 + d.phase) * 1.2;
+          const ty2 = d.homeY + Math.cos(time * 0.0012 + d.phase) * 1.2;
+          d.vx += (tx2 - d.x) * 0.04;
+          d.vy += (ty2 - d.y) * 0.04;
+          if (pointer.active) {
+            const dx = d.x - pointer.x;
+            const dy = d.y - pointer.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 0 && dist < 74) {
+              const push = (1 - dist / 74) * 1.45;
+              d.vx += (dx / dist) * push;
+              d.vy += (dy / dist) * push;
+            }
+          }
+          d.vx *= 0.86; d.vy *= 0.86;
+          d.x += d.vx; d.y += d.vy;
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+    initShapeParticles("particle-home", (w, h) => {
+      const pts = []; const size = Math.min(w, h) * 0.54; const cx2 = w * 0.5; const cy2 = h * 0.58;
+      for (let x = -size; x <= size; x += 10) for (let y = -size; y <= size; y += 10) {
+        const nx = x / size; const ny = y / size;
+        const head = Math.hypot(nx + 0.04, ny + 0.48) < 0.25;
+        const torso = Math.abs(nx + 0.03) < 0.12 && ny > -0.2 && ny < 0.32;
+        const thigh = lineDistance(nx, ny, 0.02, 0.14, 0.36, 0.38) < 0.11;
+        const arm = lineDistance(nx, ny, -0.06, -0.02, -0.36, 0.25) < 0.085;
+        const seat = Math.abs(ny - 0.42) < 0.09 && nx > -0.38 && nx < 0.42;
+        if (head || torso || thigh || arm || seat) pts.push({ x: cx2 + x, y: cy2 + y });
+      } return pts;
+    }, "rgba(255,255,255,0.3)");
+    initShapeParticles("particle-about", (w, h) => {
+      const pts = [];
+      const count = Math.floor((w * h) / 18000);
+      for (let i = 0; i < count; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        if (i % 5 === 0) {
+          pts.push({ x, y }, { x: x + 8, y }, { x: x - 8, y }, { x, y: y + 8 }, { x, y: y - 8 });
+        } else {
+          pts.push({ x, y });
+        }
+      }
+      return pts;
+    }, "rgba(255,255,255,0.2)");
+    initShapeParticles("particle-journey", (w, h) => {
+      const pts = []; const size = Math.min(w, h) * 0.46; const cx2 = w * 0.5; const cy2 = h * 0.5;
+      for (let x = -size; x <= size; x += 10) for (let y = -size; y <= size; y += 10) {
+        const nx = x / size; const ny = y / size;
+        const pole = Math.abs(nx) < 0.08 && ny > -0.62 && ny < 0.65;
+        const br = nx > 0.04 && nx < 0.58 && ny > -0.54 && ny < -0.27 && Math.abs(ny + 0.4) < (0.3 - (nx - 0.04) * 0.2);
+        const bl = nx < -0.04 && nx > -0.58 && ny > -0.1 && ny < 0.18 && Math.abs(ny - 0.04) < (0.3 - (-0.04 - nx) * 0.2);
+        if (pole || br || bl) pts.push({ x: cx2 + x, y: cy2 + y });
+      } return pts;
+    }, "rgba(255,255,255,0.24)");
+    initShapeParticles("particle-career", (w, h) => {
+      const pts = []; const size = Math.min(w, h) * 0.46; const cx2 = w * 0.5; const cy2 = h * 0.5;
+      for (let x = -size; x <= size; x += 10) for (let y = -size; y <= size; y += 10) {
+        const nx = x / size; const ny = y / size;
+        const screen = Math.abs(nx) < 0.58 && ny > -0.52 && ny < 0.08;
+        const base = Math.abs(nx) < 0.78 && ny > 0.15 && ny < 0.34;
+        const hinge = Math.abs(nx) < 0.24 && ny > 0.04 && ny < 0.14;
+        if (screen || base || hinge) pts.push({ x: cx2 + x, y: cy2 + y });
+      } return pts;
+    }, "rgba(255,255,255,0.22)");
+    initShapeParticles("particle-philosophy", (w, h) => {
+      const pts = []; const size = Math.min(w, h) * 0.44; const cx2 = w * 0.5; const cy2 = h * 0.53;
+      function inGear(nx, ny, gx, gy, r, innerR, teeth, toothDepth) {
+        const dx = nx - gx; const dy = ny - gy; const dist = Math.hypot(dx, dy); const ang = Math.atan2(dy, dx);
+        const t = Math.cos(ang * teeth); const outer = r + (t > 0.25 ? toothDepth : 0);
+        return dist < outer && dist > innerR;
+      }
+      for (let x = -size; x <= size; x += 10) for (let y = -size; y <= size; y += 10) {
+        const nx = x / size; const ny = y / size;
+        if (inGear(nx, ny, -0.22, -0.1, 0.44, 0.2, 14, 0.08) || inGear(nx, ny, 0.32, 0.24, 0.28, 0.12, 12, 0.06) || inGear(nx, ny, 0.54, -0.02, 0.2, 0.08, 10, 0.05)) pts.push({ x: cx2 + x, y: cy2 + y });
+      } return pts;
+    }, "rgba(255,255,255,0.25)");
+    initShapeParticles("particle-lighthouse", (w, h) => {
+      const pts = []; const size = Math.min(w, h) * 0.43; const cx2 = w * 0.5; const cy2 = h * 0.5;
+      for (let x = -size; x <= size; x += 10) for (let y = -size; y <= size; y += 10) {
+        const nx = x / size; const ny = y / size;
+        const leftPage = nx >= -0.75 && nx <= 0 && ny >= -0.48 && ny <= 0.45 && ny > (-0.1 + 0.55 * Math.pow(nx + 0.75, 2)) && ny < (0.45 - 0.4 * Math.pow(nx + 0.05, 2));
+        const rightPage = nx <= 0.75 && nx >= 0 && ny >= -0.48 && ny <= 0.45 && ny > (-0.1 + 0.55 * Math.pow(0.75 - nx, 2)) && ny < (0.45 - 0.4 * Math.pow(nx - 0.05, 2));
+        const spine = Math.abs(nx) < 0.06 && ny > -0.46 && ny < 0.42;
+        if (leftPage || rightPage || spine) pts.push({ x: cx2 + x, y: cy2 + y });
+      } return pts;
+    }, "rgba(255,255,255,0.24)");
+
+    const careerMarks = Array.from(document.querySelectorAll(".stage-watermark"));
+    function updateCareerParallax() {
+      careerMarks.forEach((mark) => {
+        const speed = Number(mark.dataset.speed || "0.15");
+        const rect = mark.closest(".career-stage").getBoundingClientRect();
+        const offset = (window.innerHeight * 0.5 - rect.top) * speed;
+        mark.style.transform = "translate3d(0," + (-offset) + "px,0)";
+      });
+    }
+    window.addEventListener("scroll", updateCareerParallax, { passive: true });
+    updateCareerParallax();
+
+    const scrambleChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    function scrambleTitle(el) {
+      const target = el.dataset.text || el.textContent.trim();
+      el.dataset.text = target;
+      let frame = 0;
+      const total = target.length + 10;
+      function step() {
+        let out = "";
+        for (let i = 0; i < target.length; i++) {
+          if (i < frame) out += target[i];
+          else out += scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+        }
+        el.textContent = out;
+        el.style.color = frame < target.length * 0.75 ? "rgba(255, 145, 110, 0.95)" : "";
+        frame += 1;
+        if (frame <= total) requestAnimationFrame(step);
+        else {
+          el.textContent = target;
+          el.style.color = "";
+        }
+      }
+      step();
+    }
+    const titleObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && !entry.target.dataset.scrambled) {
+          entry.target.dataset.scrambled = "1";
+          scrambleTitle(entry.target);
+        }
+      });
+    }, { threshold: 0.45 });
+    document.querySelectorAll(".en-title").forEach((el) => {
+      el.dataset.text = el.textContent.trim();
+      titleObserver.observe(el);
+    });
+
+    const aboutObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("in-view");
+          aboutObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.35 });
+    if (aboutCopy) aboutObserver.observe(aboutCopy);
+
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("revealed");
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.18 });
+    document.querySelectorAll(".module .container").forEach((el) => revealObserver.observe(el));
+  </script>
+</body>
+</html>
